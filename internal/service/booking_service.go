@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/klemis/go-spaceflight-booking-api/internal/external"
 	"github.com/klemis/go-spaceflight-booking-api/internal/utils"
 	"github.com/klemis/go-spaceflight-booking-api/models"
@@ -44,7 +46,7 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 		return models.BookingResponse{}, err
 	}
 	if !available {
-		return models.BookingResponse{}, err
+		return models.BookingResponse{}, fmt.Errorf("launchpad is not available")
 	}
 
 	return models.BookingResponse{

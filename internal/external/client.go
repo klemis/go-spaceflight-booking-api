@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/klemis/go-spaceflight-booking-api/models"
 	"net/http"
+
+	"github.com/klemis/go-spaceflight-booking-api/models"
 )
 
 // SpaceXAPIClient represents a client for interacting with the SpaceX API.
@@ -46,5 +47,5 @@ func (c *SpaceXAPIClient) CheckLaunchpadAvailability(body models.RequestBody) (b
 		return false, fmt.Errorf("failed to decode response body: %w", err)
 	}
 
-	return len(result.Docs) > 0, nil
+	return len(result.Docs) == 0, nil
 }
