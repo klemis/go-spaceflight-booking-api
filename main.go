@@ -14,7 +14,7 @@ import (
 func main() {
 	log.Println("Starting API server...")
 	// Initialize the database.
-	dbConnectionString := "user=username dbname=bookings sslmode=disable"
+	dbConnectionString := "host=localhost port=5432 user=admin password=admin dbname=bookings sslmode=disable"
 	db, err := database.InitDB(dbConnectionString)
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
