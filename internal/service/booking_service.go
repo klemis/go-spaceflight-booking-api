@@ -3,6 +3,7 @@ package service
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/klemis/go-spaceflight-booking-api/internal/external"
 	"github.com/klemis/go-spaceflight-booking-api/internal/utils"
@@ -38,30 +39,50 @@ func NewBookingService(externalClient *external.SpaceXAPIClient, db *sql.DB) Boo
 
 // CreateBooking creates a new booking.
 func (s *bookingService) CreateBooking(request models.BookingRequest) (models.BookingResponse, error) {
-	gte, lt := utils.GetRangeQueryValues(request.LaunchDate)
-
-	body := models.RequestBody{
-		Query: map[string]interface{}{
-			"launchpad": request.LaunchpadID,
-			"date_utc": map[string]interface{}{
-				"$gte": gte,
-				"$lt":  lt,
-			},
-		},
-		Options: models.Options{
-			Select: "id",
-		},
-	}
-	available, err := s.externalClient.CheckLaunchpadAvailability(body)
+	state, err := s.externalClient.CheckLaunchpadState(request.LaunchpadID)
 	if err != nil {
 		return models.BookingResponse{}, err
 	}
-	if !available {
+	if state != "active" {
 		return models.BookingResponse{}, fmt.Errorf("launchpad is not available")
+	}
+
+	body := prepareRequestBody(request.LaunchpadID, request.LaunchDate)
+
+	launches, err := s.externalClient.CheckScheduledLaunches(body)
+	if err != nil {
+		return models.BookingResponse{}, err
+	}
+	if len(launches.Docs) != 0 {
+		return models.BookingResponse{}, fmt.Errorf("launchpad has already been reserved")
 	}
 
 	return models.BookingResponse{
 		ID:          123,
 		LaunchpadID: request.LaunchpadID,
 	}, nil
+}
+
+// prepareRequestBody constructs a RequestBody with extended options.
+func prepareRequestBody(launchpadId string, launchDate time.Time) models.RequestBody {
+	gte, lt := utils.GetRangeQueryValues(launchDate)
+
+	options := models.Options{
+		Select: map[string]int{
+			"id": 1,
+		},
+	}
+
+	body := models.RequestBody{
+		Query: map[string]interface{}{
+			"launchpad": launchpadId,
+			"date_utc": map[string]string{
+				"$gte": gte,
+				"$lt":  lt,
+			},
+		},
+		Options: options,
+	}
+
+	return body
 }
