@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/klemis/go-spaceflight-booking-api/internal/external"
@@ -16,14 +17,24 @@ type BookingService interface {
 // bookingService is an implementation of BookingService.
 type bookingService struct {
 	externalClient *external.SpaceXAPIClient
+	db             *sql.DB
 }
 
 // NewBookingService creates a new instance of bookingService with the external client.
-func NewBookingService(externalClient *external.SpaceXAPIClient) BookingService {
+func NewBookingService(externalClient *external.SpaceXAPIClient, db *sql.DB) BookingService {
 	return &bookingService{
 		externalClient: externalClient,
+		db:             db,
 	}
 }
+
+// TODO:
+// - add database postgresql
+// - implement GetBookings method
+// - implement DeleteBooking method
+// - add logging
+// - add middleware
+// - dockerfile/ docker-compose
 
 // CreateBooking creates a new booking.
 func (s *bookingService) CreateBooking(request models.BookingRequest) (models.BookingResponse, error) {

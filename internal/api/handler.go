@@ -30,7 +30,7 @@ func (h *Handler) CreateBooking(c *gin.Context) {
 
 	result, err := h.BookingService.CreateBooking(booking)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create booking " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create booking: " + err.Error()})
 		return
 	}
 
