@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-	//dbConnectionString := "host=localhost port=5432 user=admin password=admin dbname=bookings sslmode=disable"
 	databaseURL := os.Getenv("DATABASE_URL")
 	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
