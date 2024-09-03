@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/klemis/go-spaceflight-booking-api/internal/database"
 	"github.com/klemis/go-spaceflight-booking-api/internal/external"
@@ -10,9 +11,9 @@ import (
 
 func main() {
 	log.Println("Initiating the schedule setup process for launchpads...")
-	dbConnectionString := "host=localhost port=5432 user=admin password=admin dbname=bookings sslmode=disable"
-
-	db, err := database.InitDB(dbConnectionString)
+	//dbConnectionString := "host=localhost port=5432 user=admin password=admin dbname=bookings sslmode=disable"
+	databaseURL := os.Getenv("DATABASE_URL")
+	db, err := database.InitDB(databaseURL)
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
@@ -42,5 +43,5 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to fetch active launchpads: %v", err)
 	}
-	
+
 }
