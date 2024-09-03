@@ -29,7 +29,7 @@ func main() {
 	// Initialize spacex client.
 	externalClient := external.NewSpaceXAPIClient("https://api.spacexdata.com/v4/")
 	// Initialize the booking service with the spacex external client.
-	bookingService := service.NewBookingService(externalClient, db.DB)
+	bookingService := service.NewBookingService(externalClient, db)
 	// Initialize the handler with the booking service.
 	handler := api.NewHandler(bookingService)
 

@@ -1,12 +1,10 @@
 package service
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/klemis/go-spaceflight-booking-api/internal/database"
 	"github.com/klemis/go-spaceflight-booking-api/internal/external"
 	"github.com/klemis/go-spaceflight-booking-api/internal/utils"
 	"github.com/klemis/go-spaceflight-booking-api/models"
@@ -16,20 +14,17 @@ import (
 type BookingService interface {
 	GetBookings() ([]models.Booking, error)
 	CreateBooking(request models.BookingRequest) (models.BookingResponse, error)
-	GetDestinationID(launchpadID string, launchDate time.Time) (models.Destination, error)
-	GetLaunchpadID(destinationID models.Destination, launchDate time.Time) (string, error)
-	InsertBooking(request models.BookingRequest, launchpadID string) (uint, error)
 	DeleteBooking(id int) error
 }
 
 // bookingService is an implementation of BookingService.
 type bookingService struct {
 	externalClient *external.SpaceXAPIClient
-	db             *sql.DB
+	db             database.DBInterface
 }
 
 // NewBookingService creates a new instance of bookingService with the external client.
-func NewBookingService(externalClient *external.SpaceXAPIClient, db *sql.DB) BookingService {
+func NewBookingService(externalClient *external.SpaceXAPIClient, db database.DBInterface) BookingService {
 	return &bookingService{
 		externalClient: externalClient,
 		db:             db,
@@ -48,7 +43,7 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 	// To simplify, I removed the `LaunchpadID` parameter from the request. Instead, the function retrieves the relevant launchpad
 	// from the current schedules. It selects the appropriate launchpad based on the `DestinationID` and `LaunchDate`.
 	// FIXME: Also consider if it should be a "cancelled" flight.
-	launchpadID, err := s.GetLaunchpadID(request.DestinationID, request.LaunchDate)
+	launchpadID, err := s.db.GetLaunchpadID(request.DestinationID, request.LaunchDate)
 	if err != nil {
 		return models.BookingResponse{}, err
 	}
@@ -65,7 +60,7 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 	}
 
 	// Insert booking to bookings table.
-	id, err := s.InsertBooking(request, launchpadID)
+	id, err := s.db.InsertBooking(request, launchpadID)
 	if err != nil {
 		return models.BookingResponse{}, err
 	}
@@ -78,110 +73,22 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 	}, nil
 }
 
-func (s *bookingService) GetDestinationID(launchpadID string, launchDate time.Time) (models.Destination, error) {
-	query := `SELECT destination_id FROM schedules WHERE launchpad_id = $1 AND day_of_week = $2;`
-	row := s.db.QueryRow(query, launchpadID, launchDate.Weekday())
-
-	var schedule models.Schedule
-	err := row.Scan(&schedule.Destination)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, fmt.Errorf("missing destination for the provided launchpad at this date")
-		}
-
-		return 0, err
-	}
-
-	return schedule.Destination, nil
-}
-
-func (s *bookingService) GetLaunchpadID(destinationID models.Destination, launchDate time.Time) (string, error) {
-	query := `SELECT launchpad_id FROM schedules WHERE destination_id = $1 AND day_of_week = $2;`
-	row := s.db.QueryRow(query, destinationID, launchDate.Weekday())
-
-	var schedule models.Schedule
-	err := row.Scan(&schedule.LaunchpadID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", fmt.Errorf("missing launchpad for the provided destination at this date")
-		}
-
-		return "", err
-	}
-
-	return schedule.LaunchpadID, nil
-}
-
-func (s *bookingService) InsertBooking(request models.BookingRequest, launchpadID string) (uint, error) {
-	query := `
-        INSERT INTO bookings (first_name, last_name, gender, birthday, launchpad_id, destination_id, launch_date)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id`
-
-	var id uint
-	err := s.db.QueryRow(query,
-		request.FirstName,
-		request.LastName,
-		request.Gender,
-		request.Birthday,
-		launchpadID,
-		request.DestinationID,
-		request.LaunchDate,
-	).Scan(&id)
-	if err != nil {
-		return 0, fmt.Errorf("failed to insert booking: %w", err)
-	}
-
-	return id, nil
-}
-
-func (s *bookingService) GetBookings() ([]models.Booking, error) {
-	var bookings []models.Booking
-	query := `SELECT id, first_name, last_name, gender, birthday, launchpad_id, destination_id, launch_date FROM bookings;`
-	rows, err := s.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-			log.Fatal("failed to close rows in GetBookings query")
-		}
-	}(rows)
-
-	for rows.Next() {
-		var booking models.Booking
-		err = rows.Scan(&booking.ID, &booking.FirstName, &booking.LastName, &booking.Gender, &booking.Birthday, &booking.LaunchpadID, &booking.DestinationID, &booking.LaunchDate)
-		if err != nil {
-			return nil, err
-		}
-		bookings = append(bookings, booking)
-	}
-
-	if len(bookings) == 0 {
-		return nil, sql.ErrNoRows
-	}
-
-	return bookings, nil
-}
-
 func (s *bookingService) DeleteBooking(id int) error {
-	query := `DELETE FROM bookings WHERE id = $1;`
-	result, err := s.db.Exec(query, id)
+	err := s.db.DeleteBooking(id)
 	if err != nil {
 		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return sql.ErrNoRows
 	}
 
 	return nil
+}
+
+func (s *bookingService) GetBookings() ([]models.Booking, error) {
+	bookings, err := s.db.GetBookings()
+	if err != nil {
+		return []models.Booking{}, err
+	}
+
+	return bookings, nil
 }
 
 // prepareRequestBody constructs a RequestBody with extended options.
