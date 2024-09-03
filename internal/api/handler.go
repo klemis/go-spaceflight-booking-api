@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -52,6 +54,11 @@ func (h *Handler) CreateBooking(c *gin.Context) {
 func (h *Handler) GetBookings(c *gin.Context) {
 	bookings, err := h.BookingService.GetBookings()
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No bookings found"})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve bookings: " + err.Error()})
 		return
 	}
@@ -70,6 +77,11 @@ func (h *Handler) DeleteBooking(c *gin.Context) {
 
 	err = h.BookingService.DeleteBooking(id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Booking not found"})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not delete booking: " + err.Error()})
 		return
 	}

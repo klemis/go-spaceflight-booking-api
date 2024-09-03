@@ -158,14 +158,27 @@ func (s *bookingService) GetBookings() ([]models.Booking, error) {
 		bookings = append(bookings, booking)
 	}
 
+	if len(bookings) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
 	return bookings, nil
 }
 
 func (s *bookingService) DeleteBooking(id int) error {
 	query := `DELETE FROM bookings WHERE id = $1;`
-	_, err := s.db.Exec(query, id)
+	result, err := s.db.Exec(query, id)
 	if err != nil {
 		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
 	}
 
 	return nil
