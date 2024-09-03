@@ -40,6 +40,8 @@ func main() {
 	if err := insertSchedules(db, schedules); err != nil {
 		log.Fatalf("failed to insert schedules: %v", err)
 	}
+
+	log.Println("Launchpads schedules successfully inserted into schedules table.")
 }
 
 // insertSchedules inserts a list of schedules into the database.
