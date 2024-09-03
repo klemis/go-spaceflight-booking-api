@@ -3,7 +3,18 @@ package utils
 import (
 	"fmt"
 	"time"
+
+	"github.com/klemis/go-spaceflight-booking-api/models"
 )
+
+// String function to get string representation of Destination.
+func String(destination models.Destination) string {
+	if str, ok := models.DestinationStrings[destination]; ok {
+		return str
+	}
+
+	return "Unknown"
+}
 
 // GetRangeQueryValues creates a range query for a given date to cover the entire day.
 func GetRangeQueryValues(dateTime time.Time) (gte, lt string) {

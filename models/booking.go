@@ -14,6 +14,8 @@ type BookingRequest struct {
 }
 
 type BookingResponse struct {
-	ID          uint   `gorm:"primary_key" json:"id"`
-	LaunchpadID string `json:"launchpad_id"`
+	ID          uint      `gorm:"primary_key" json:"id"`
+	LaunchpadID string    `json:"launchpad_id"`
+	LaunchDate  time.Time `json:"launch_date"`
+	Destination string    `json:"destination"`
 }

@@ -14,9 +14,22 @@ const (
 	Ganymede     Destination = 7
 )
 
+// DestinationStrings map to hold string representations
+var DestinationStrings = map[Destination]string{
+	Mars:         "Mars",
+	Moon:         "Moon",
+	Pluto:        "Pluto",
+	AsteroidBelt: "Asteroid Belt",
+	Europa:       "Europa",
+	Titan:        "Titan",
+	Ganymede:     "Ganymede",
+}
+
 type Schedule struct {
 	ID          uint
 	LaunchpadID string
 	Destination Destination
 	DayOfWeek   time.Weekday
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -30,11 +31,6 @@ func NewBookingService(externalClient *external.SpaceXAPIClient, db *sql.DB) Boo
 }
 
 // TODO:
-// - Every day you change the destination for all the launchpads.
-//		Every day of the week from the same launchpad has to be a “flight” to a different place.
-// - Set the schedule for active launchpads and save to database
-//
-// - extend BookingResponse
 // - implement GetBookings method
 // - implement DeleteBooking method
 // - add logging
@@ -60,11 +56,24 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 		return models.BookingResponse{}, fmt.Errorf("launchpad has already been reserved")
 	}
 
-	//s.db.Exec()
+	query := `SELECT destination_id FROM schedules WHERE launchpad_id = $1 AND day_of_week = $2;`
+	row := s.db.QueryRow(query, request.LaunchpadID, request.LaunchDate.Weekday())
+
+	var schedule models.Schedule
+	err = row.Scan(&schedule.Destination)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.BookingResponse{}, nil
+		}
+
+		return models.BookingResponse{}, err
+	}
 
 	return models.BookingResponse{
 		ID:          123,
 		LaunchpadID: request.LaunchpadID,
+		LaunchDate:  request.LaunchDate,
+		Destination: utils.String(schedule.Destination),
 	}, nil
 }
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -15,8 +14,8 @@ import (
 func main() {
 	log.Println("Starting API server...")
 	// Initialize the database.
-	//dbConnectionString := "host=localhost port=5432 user=admin password=admin dbname=bookings sslmode=disable"
-	databaseURL := os.Getenv("DATABASE_URL")
+	databaseURL := "host=localhost port=5432 user=admin password=admin dbname=bookings_db sslmode=disable"
+	//databaseURL := os.Getenv("DATABASE_URL")
 	db, err := database.InitDB(databaseURL)
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
