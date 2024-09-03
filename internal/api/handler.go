@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
@@ -56,4 +57,22 @@ func (h *Handler) GetBookings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, bookings)
+}
+
+// DeleteBooking handles the deletion of a booking.
+func (h *Handler) DeleteBooking(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		c.Abort()
+		return
+	}
+
+	err = h.BookingService.DeleteBooking(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not delete booking: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Booking deleted successfully"})
 }

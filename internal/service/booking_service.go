@@ -19,6 +19,7 @@ type BookingService interface {
 	GetDestinationID(launchpadID string, launchDate time.Time) (models.Destination, error)
 	GetLaunchpadID(destinationID models.Destination, launchDate time.Time) (string, error)
 	InsertBooking(request models.BookingRequest, launchpadID string) (uint, error)
+	DeleteBooking(id int) error
 }
 
 // bookingService is an implementation of BookingService.
@@ -38,7 +39,6 @@ func NewBookingService(externalClient *external.SpaceXAPIClient, db *sql.DB) Boo
 // TODO:
 // - describe destination_id mapping in docs
 // - add booking state ex. "cancelled"
-// - implement DeleteBooking method
 // - add logging
 // - add middleware
 
@@ -157,6 +157,16 @@ func (s *bookingService) GetBookings() ([]models.Booking, error) {
 	}
 
 	return bookings, nil
+}
+
+func (s *bookingService) DeleteBooking(id int) error {
+	query := `DELETE FROM bookings WHERE id = $1;`
+	_, err := s.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // prepareRequestBody constructs a RequestBody with extended options.
