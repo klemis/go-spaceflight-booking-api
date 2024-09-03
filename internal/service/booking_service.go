@@ -14,6 +14,8 @@ import (
 // BookingService provides methods for booking operations.
 type BookingService interface {
 	CreateBooking(request models.BookingRequest) (models.BookingResponse, error)
+	GetDestinationID(launchpadID string, launchDate time.Time) (models.Destination, error)
+	InsertBooking(request models.BookingRequest) (uint, error)
 }
 
 // bookingService is an implementation of BookingService.
@@ -56,28 +58,51 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 		return models.BookingResponse{}, fmt.Errorf("launchpad has already been reserved")
 	}
 
-	// Get destination_id from schedules table.
-	query := `SELECT destination_id FROM schedules WHERE launchpad_id = $1 AND day_of_week = $2;`
-	row := s.db.QueryRow(query, request.LaunchpadID, request.LaunchDate.Weekday())
-
-	var schedule models.Schedule
-	err = row.Scan(&schedule.Destination)
+	// Get destinationID from schedules table.
+	destinationID, err := s.GetDestinationID(request.LaunchpadID, request.LaunchDate)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return models.BookingResponse{}, nil
-		}
-
 		return models.BookingResponse{}, err
 	}
 
 	// Insert booking to bookings table.
-	query = `
+	id, err := s.InsertBooking(request)
+	if err != nil {
+		return models.BookingResponse{}, err
+	}
+
+	return models.BookingResponse{
+		ID:          id,
+		LaunchpadID: request.LaunchpadID,
+		LaunchDate:  request.LaunchDate,
+		Destination: utils.String(destinationID),
+	}, nil
+}
+
+func (s *bookingService) GetDestinationID(launchpadID string, launchDate time.Time) (models.Destination, error) {
+	query := `SELECT destination_id FROM schedules WHERE launchpad_id = $1 AND day_of_week = $2;`
+	row := s.db.QueryRow(query, launchpadID, launchDate.Weekday())
+
+	var schedule models.Schedule
+	err := row.Scan(&schedule.Destination)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, fmt.Errorf("missing destination for the provided launchpad")
+		}
+
+		return 0, err
+	}
+
+	return schedule.Destination, nil
+}
+
+func (s *bookingService) InsertBooking(request models.BookingRequest) (uint, error) {
+	query := `
         INSERT INTO bookings (first_name, last_name, gender, birthday, launchpad_id, destination_id, launch_date)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id`
 
 	var id uint
-	err = s.db.QueryRow(query,
+	err := s.db.QueryRow(query,
 		request.FirstName,
 		request.LastName,
 		request.Gender,
@@ -87,15 +112,10 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 		request.LaunchDate,
 	).Scan(&id)
 	if err != nil {
-		return models.BookingResponse{}, fmt.Errorf("failed to insert booking: %w", err)
+		return 0, fmt.Errorf("failed to insert booking: %w", err)
 	}
 
-	return models.BookingResponse{
-		ID:          id,
-		LaunchpadID: request.LaunchpadID,
-		LaunchDate:  request.LaunchDate,
-		Destination: utils.String(schedule.Destination),
-	}, nil
+	return id, nil
 }
 
 // prepareRequestBody constructs a RequestBody with extended options.
