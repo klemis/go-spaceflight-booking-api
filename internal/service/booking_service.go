@@ -30,12 +30,15 @@ func NewBookingService(externalClient *external.SpaceXAPIClient, db *sql.DB) Boo
 }
 
 // TODO:
-// - add database postgresql
+// - Every day you change the destination for all the launchpads.
+//		Every day of the week from the same launchpad has to be a “flight” to a different place.
+// - Set the schedule for active launchpads and save to database
+//
+// - extend BookingResponse
 // - implement GetBookings method
 // - implement DeleteBooking method
 // - add logging
 // - add middleware
-// - dockerfile/ docker-compose
 
 // CreateBooking creates a new booking.
 func (s *bookingService) CreateBooking(request models.BookingRequest) (models.BookingResponse, error) {
