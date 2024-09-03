@@ -84,7 +84,7 @@ func (s *bookingService) GetDestinationID(launchpadID string, launchDate time.Ti
 	err := row.Scan(&schedule.Destination)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, fmt.Errorf("missing destination for the provided launchpad")
+			return 0, fmt.Errorf("missing destination for the provided launchpad at this date")
 		}
 
 		return 0, err
@@ -101,7 +101,7 @@ func (s *bookingService) GetLaunchpadID(destinationID models.Destination, launch
 	err := row.Scan(&schedule.LaunchpadID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", fmt.Errorf("missing destination for the provided launchpad")
+			return "", fmt.Errorf("missing launchpad for the provided destination at this date")
 		}
 
 		return "", err

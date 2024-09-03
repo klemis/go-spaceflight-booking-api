@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator"
 
 	"github.com/klemis/go-spaceflight-booking-api/internal/service"
 	"github.com/klemis/go-spaceflight-booking-api/models"
@@ -24,7 +25,16 @@ func NewHandler(bookingService service.BookingService) *Handler {
 func (h *Handler) CreateBooking(c *gin.Context) {
 	var booking models.BookingRequest
 	if err := c.BindJSON(&booking); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+		c.Abort()
+		return
+	}
+
+	validate := validator.New()
+	err := validate.Struct(booking)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		c.Abort()
 		return
 	}
 
