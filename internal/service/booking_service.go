@@ -56,6 +56,7 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 		return models.BookingResponse{}, fmt.Errorf("launchpad has already been reserved")
 	}
 
+	// Get destination_id from schedules table.
 	query := `SELECT destination_id FROM schedules WHERE launchpad_id = $1 AND day_of_week = $2;`
 	row := s.db.QueryRow(query, request.LaunchpadID, request.LaunchDate.Weekday())
 
@@ -69,8 +70,28 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 		return models.BookingResponse{}, err
 	}
 
+	// Insert booking to bookings table.
+	query = `
+        INSERT INTO bookings (first_name, last_name, gender, birthday, launchpad_id, destination_id, launch_date)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id`
+
+	var id uint
+	err = s.db.QueryRow(query,
+		request.FirstName,
+		request.LastName,
+		request.Gender,
+		request.Birthday,
+		request.LaunchpadID,
+		request.DestinationID,
+		request.LaunchDate,
+	).Scan(&id)
+	if err != nil {
+		return models.BookingResponse{}, fmt.Errorf("failed to insert booking: %w", err)
+	}
+
 	return models.BookingResponse{
-		ID:          123,
+		ID:          id,
 		LaunchpadID: request.LaunchpadID,
 		LaunchDate:  request.LaunchDate,
 		Destination: utils.String(schedule.Destination),
