@@ -37,10 +37,9 @@ func NewBookingService(externalClient *external.SpaceXAPIClient, db *sql.DB) Boo
 }
 
 // TODO:
+// - create readme
 // - describe destination_id mapping in docs
-// - add booking state ex. "cancelled"
-// - add logging
-// - add middleware
+// - add unit tests
 
 // CreateBooking creates a new booking.
 func (s *bookingService) CreateBooking(request models.BookingRequest) (models.BookingResponse, error) {
@@ -48,6 +47,7 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 	// I created a separate binary for generating schedules (`GenerateSchedules`), that creates schedule only for active launchpads.
 	// To simplify, I removed the `LaunchpadID` parameter from the request. Instead, the function retrieves the relevant launchpad
 	// from the current schedules. It selects the appropriate launchpad based on the `DestinationID` and `LaunchDate`.
+	// FIXME: Also consider if it should be a "cancelled" flight.
 	launchpadID, err := s.GetLaunchpadID(request.DestinationID, request.LaunchDate)
 	if err != nil {
 		return models.BookingResponse{}, err
@@ -59,6 +59,8 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 		return models.BookingResponse{}, err
 	}
 	if len(launches.Docs) != 0 {
+		// FIXME: Can we assume that this is a "cancelled" flight? Currently its rather not created at all.
+		// - Extend Booking struct by State and set state = "cancelled" here.
 		return models.BookingResponse{}, fmt.Errorf("launchpad has already been reserved")
 	}
 
