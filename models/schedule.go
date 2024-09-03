@@ -16,7 +16,7 @@ const (
 
 type Schedule struct {
 	ID          uint
-	LaunchpadID uint
+	LaunchpadID string
 	Destination Destination
 	DayOfWeek   time.Weekday
 }
