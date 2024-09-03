@@ -60,6 +60,8 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 		return models.BookingResponse{}, fmt.Errorf("launchpad has already been reserved")
 	}
 
+	//s.db.Exec()
+
 	return models.BookingResponse{
 		ID:          123,
 		LaunchpadID: request.LaunchpadID,
