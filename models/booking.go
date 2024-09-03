@@ -2,6 +2,17 @@ package models
 
 import "time"
 
+type Booking struct {
+	ID            uint
+	FirstName     string
+	LastName      string
+	Gender        string
+	Birthday      time.Time
+	LaunchpadID   string
+	DestinationID Destination
+	LaunchDate    time.Time
+}
+
 type BookingRequest struct {
 	FirstName     string      `json:"first_name" validate:"required,min=2,max=50"`
 	LastName      string      `json:"last_name" validate:"required,min=2,max=50"`

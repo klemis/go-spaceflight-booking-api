@@ -36,6 +36,7 @@ func main() {
 	router := gin.Default()
 	v1 := router.Group("/api/v1")
 	v1.POST("/bookings", handler.CreateBooking)
+	v1.GET("/bookings", handler.GetBookings)
 
 	log.Println("API server listening on port 8080...")
 	err = router.Run(":8080")

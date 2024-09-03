@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/klemis/go-spaceflight-booking-api/internal/external"
@@ -13,6 +14,7 @@ import (
 
 // BookingService provides methods for booking operations.
 type BookingService interface {
+	GetBookings() ([]models.Booking, error)
 	CreateBooking(request models.BookingRequest) (models.BookingResponse, error)
 	GetDestinationID(launchpadID string, launchDate time.Time) (models.Destination, error)
 	GetLaunchpadID(destinationID models.Destination, launchDate time.Time) (string, error)
@@ -34,10 +36,8 @@ func NewBookingService(externalClient *external.SpaceXAPIClient, db *sql.DB) Boo
 }
 
 // TODO:
-// - add request params validation
 // - describe destination_id mapping in docs
 // - add booking state ex. "cancelled"
-// - implement GetBookings method
 // - implement DeleteBooking method
 // - add logging
 // - add middleware
@@ -131,6 +131,32 @@ func (s *bookingService) InsertBooking(request models.BookingRequest, launchpadI
 	}
 
 	return id, nil
+}
+
+func (s *bookingService) GetBookings() ([]models.Booking, error) {
+	var bookings []models.Booking
+	query := `SELECT id, first_name, last_name, gender, birthday, launchpad_id, destination_id, launch_date FROM bookings;`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal("failed to close rows in GetBookings query")
+		}
+	}(rows)
+
+	for rows.Next() {
+		var booking models.Booking
+		err = rows.Scan(&booking.ID, &booking.FirstName, &booking.LastName, &booking.Gender, &booking.Birthday, &booking.LaunchpadID, &booking.DestinationID, &booking.LaunchDate)
+		if err != nil {
+			return nil, err
+		}
+		bookings = append(bookings, booking)
+	}
+
+	return bookings, nil
 }
 
 // prepareRequestBody constructs a RequestBody with extended options.

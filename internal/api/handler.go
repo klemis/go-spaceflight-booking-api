@@ -46,3 +46,14 @@ func (h *Handler) CreateBooking(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
+
+// GetBookings handles the retrieval of a list of bookings.
+func (h *Handler) GetBookings(c *gin.Context) {
+	bookings, err := h.BookingService.GetBookings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve bookings: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, bookings)
+}
