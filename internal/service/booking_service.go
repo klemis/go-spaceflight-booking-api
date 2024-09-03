@@ -13,7 +13,7 @@ import (
 // BookingService provides methods for booking operations.
 type BookingService interface {
 	GetBookings() ([]models.Booking, error)
-	CreateBooking(request models.BookingRequest) (models.BookingResponse, error)
+	CreateBooking(request models.BookingRequest) (models.Booking, error)
 	DeleteBooking(id int) error
 }
 
@@ -37,7 +37,7 @@ func NewBookingService(externalClient *external.SpaceXAPIClient, db database.DBI
 // - add unit tests
 
 // CreateBooking creates a new booking.
-func (s *bookingService) CreateBooking(request models.BookingRequest) (models.BookingResponse, error) {
+func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Booking, error) {
 	// This function is designed based on the assumption that the destination is more crucial for the user than the launchpad.
 	// I created a separate binary for generating schedules (`GenerateSchedules`), that creates schedule only for active launchpads.
 	// To simplify, I removed the `LaunchpadID` parameter from the request. Instead, the function retrieves the relevant launchpad
@@ -45,31 +45,35 @@ func (s *bookingService) CreateBooking(request models.BookingRequest) (models.Bo
 	// FIXME: Also consider if it should be a "cancelled" flight.
 	launchpadID, err := s.db.GetLaunchpadID(request.DestinationID, request.LaunchDate)
 	if err != nil {
-		return models.BookingResponse{}, err
+		return models.Booking{}, err
 	}
 
 	body := prepareRequestBody(launchpadID, request.LaunchDate)
 	launches, err := s.externalClient.CheckScheduledLaunches(body)
 	if err != nil {
-		return models.BookingResponse{}, err
+		return models.Booking{}, err
 	}
 	if len(launches.Docs) != 0 {
 		// FIXME: Can we assume that this is a "cancelled" flight? Currently its rather not created at all.
 		// - Extend Booking struct by State and set state = "cancelled" here.
-		return models.BookingResponse{}, fmt.Errorf("launchpad has already been reserved")
+		return models.Booking{}, fmt.Errorf("launchpad has already been reserved")
 	}
 
 	// Insert booking to bookings table.
 	id, err := s.db.InsertBooking(request, launchpadID)
 	if err != nil {
-		return models.BookingResponse{}, err
+		return models.Booking{}, err
 	}
 
-	return models.BookingResponse{
-		ID:          id,
-		LaunchpadID: launchpadID,
-		LaunchDate:  request.LaunchDate,
-		Destination: utils.String(request.DestinationID),
+	return models.Booking{
+		ID:            id,
+		FirstName:     request.FirstName,
+		LastName:      request.LastName,
+		Gender:        request.Gender,
+		Birthday:      request.Birthday,
+		LaunchpadID:   launchpadID,
+		DestinationID: request.DestinationID,
+		LaunchDate:    request.LaunchDate,
 	}, nil
 }
 

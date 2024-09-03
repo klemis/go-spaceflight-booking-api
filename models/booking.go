@@ -3,14 +3,14 @@ package models
 import "time"
 
 type Booking struct {
-	ID            uint
-	FirstName     string
-	LastName      string
-	Gender        string
-	Birthday      time.Time
-	LaunchpadID   string
-	DestinationID Destination
-	LaunchDate    time.Time
+	ID            uint        `json:"id"`
+	FirstName     string      `json:"first_name"`
+	LastName      string      `json:"last_name"`
+	Gender        string      `json:"gender"`
+	Birthday      time.Time   `json:"birthday"`
+	LaunchpadID   string      `json:"launchpad_id"`
+	DestinationID Destination `json:"destination_id"`
+	LaunchDate    time.Time   `json:"launch_date"`
 }
 
 type BookingRequest struct {
@@ -20,11 +20,4 @@ type BookingRequest struct {
 	Birthday      time.Time   `json:"birthday" validate:"required"`
 	DestinationID Destination `json:"destination_id" validate:"required,gte=1,lte=7"`
 	LaunchDate    time.Time   `json:"launch_date" validate:"required"`
-}
-
-type BookingResponse struct {
-	ID          uint      `json:"id"`
-	LaunchpadID string    `json:"launchpad_id"`
-	LaunchDate  time.Time `json:"launch_date"`
-	Destination string    `json:"destination"`
 }
