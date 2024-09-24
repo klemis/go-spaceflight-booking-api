@@ -34,6 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to fetch active launchpads: %v", err)
 	}
+	log.Println("Number of active launchpads: ", len(availableLaunchpads))
 
 	schedules := utils.GenerateSchedule(availableLaunchpads)
 	// Insert schedule into database
@@ -46,6 +47,7 @@ func main() {
 
 // insertSchedules inserts a list of schedules into the database.
 func insertSchedules(db *database.DB, schedules []models.Schedule) error {
+	// launchpad_id can only have one schedule per day of the week
 	query := `
 		INSERT INTO schedules (launchpad_id, destination_id, day_of_week, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5)
@@ -79,7 +81,7 @@ func prepareRequestBody() models.RequestBody {
 
 	body := models.RequestBody{
 		Query: map[string]interface{}{
-			"state": "active",
+			"status": "active",
 		},
 		Options: options,
 	}
